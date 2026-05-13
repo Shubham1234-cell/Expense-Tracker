@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Budget Setup - FinTrack{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Monthly Budget Control</h2>
+    </div>
+
+    <form method="POST" action="{{ url_for('dashboard.budgets') }}">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4"><i class="fas fa-wallet text-brand-500 mr-2"></i> Overall Monthly Limit</h3>
+            <div class="flex items-center space-x-4">
+                <div class="relative flex-1">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
+                    </div>
+                    <input type="number" step="0.01" name="overall_limit" value="{{ overall_budget.monthly_limit if overall_budget else '' }}" class="pl-7 w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-brand-500 focus:border-brand-500 dark:text-white" placeholder="Total spending limit for the month">
+                </div>
+            </div>
+            
+            {% if overall_budget %}
+            <div class="mt-4">
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-500 dark:text-gray-400">Spent: ${{ "%.2f"|format(overall_budget.spent_amount) }}</span>
+                    <span class="font-medium {% if overall_budget.remaining_amount < 0 %}text-red-500{% else %}text-gray-800 dark:text-white{% endif %}">
+                        Remaining: ${{ "%.2f"|format(overall_budget.remaining_amount) }}
+                    </span>
+                </div>
+                {% set pct = (overall_budget.spent_amount / overall_budget.monthly_limit * 100) if overall_budget.monthly_limit > 0 else 0 %}
+                <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                    <div class="h-2.5 rounded-full {% if pct >= 100 %}bg-red-600{% elif pct >= 80 %}bg-yellow-400{% else %}bg-brand-600{% endif %}" style="width: {{ pct if pct <= 100 else 100 }}%"></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4"><i class="fas fa-list text-brand-500 mr-2"></i> Category Limits</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {% for cat in categories %}
+                <div class="p-4 border border-gray-100 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900/50">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ cat.name }} Limit</label>
+                    <div class="relative mb-3">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
+                        </div>
+                        <input type="number" step="0.01" name="cat_limit_{{ cat.id }}" value="{{ cat_budgets_dict[cat.id].category_limit if cat.id in cat_budgets_dict else '' }}" class="pl-7 w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-brand-500 focus:border-brand-500 dark:text-white" placeholder="Limit">
+                    </div>
+                    
+                    {% if cat.id in cat_budgets_dict and cat_budgets_dict[cat.id].category_limit %}
+                    {% set cat_budget = cat_budgets_dict[cat.id] %}
+                    {% set cat_pct = (cat_budget.spent_amount / cat_budget.category_limit * 100) if cat_budget.category_limit > 0 else 0 %}
+                    <div class="text-xs flex justify-between mb-1">
+                        <span class="text-gray-500">Used: {{ "%.0f"|format(cat_pct) }}%</span>
+                        <span class="{% if cat_budget.remaining_amount < 0 %}text-red-500{% else %}text-gray-500{% endif %}">Left: ${{ "%.2f"|format(cat_budget.remaining_amount) }}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
+                        <div class="h-1.5 rounded-full {% if cat_pct >= 100 %}bg-red-600{% elif cat_pct >= 80 %}bg-yellow-400{% else %}bg-brand-500{% endif %}" style="width: {{ cat_pct if cat_pct <= 100 else 100 }}%"></div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="mt-6 flex justify-end">
+            <button type="submit" class="px-6 py-3 bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-lg shadow-lg hover:from-brand-700 hover:to-brand-600 transition transform hover:-translate-y-0.5">
+                Save Budget Limits
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

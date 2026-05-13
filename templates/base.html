@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Expense Tracker{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 transition-colors duration-300">
+    <div class="flex h-screen overflow-hidden">
+        {% if current_user.is_authenticated %}
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white dark:bg-gray-800 shadow-xl hidden md:flex flex-col">
+            <div class="p-6 border-b dark:border-gray-700">
+                <h1 class="text-2xl font-bold text-brand-600 dark:text-brand-500"><i class="fas fa-wallet mr-2"></i>FinTrack</h1>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-4">
+                <a href="{{ url_for('dashboard.index') }}" class="flex items-center px-6 py-3 text-gray-700 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-gray-700 hover:text-brand-600 border-l-4 border-transparent hover:border-brand-600 transition-colors">
+                    <i class="fas fa-chart-pie w-5 mr-3"></i> Dashboard
+                </a>
+                <a href="{{ url_for('dashboard.transactions') }}" class="flex items-center px-6 py-3 text-gray-700 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-gray-700 hover:text-brand-600 border-l-4 border-transparent hover:border-brand-600 transition-colors">
+                    <i class="fas fa-exchange-alt w-5 mr-3"></i> Transactions
+                </a>
+                <a href="{{ url_for('dashboard.budgets') }}" class="flex items-center px-6 py-3 text-gray-700 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-gray-700 hover:text-brand-600 border-l-4 border-transparent hover:border-brand-600 transition-colors">
+                    <i class="fas fa-wallet w-5 mr-3"></i> Budgets
+                </a>
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('admin.dashboard') }}" class="flex items-center px-6 py-3 text-gray-700 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-gray-700 hover:text-brand-600 border-l-4 border-transparent hover:border-brand-600 transition-colors">
+                    <i class="fas fa-users-cog w-5 mr-3"></i> Admin Panel
+                </a>
+                {% endif %}
+            </nav>
+            <div class="p-4 border-t dark:border-gray-700">
+                <a href="{{ url_for('auth.logout') }}" class="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                </a>
+            </div>
+        </aside>
+        {% endif %}
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-hidden relative">
+            {% if current_user.is_authenticated %}
+            <header class="flex items-center justify-between p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md shadow-sm z-10">
+                <div class="flex items-center md:hidden">
+                    <button class="text-gray-500 focus:outline-none focus:text-gray-700 dark:focus:text-gray-300">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <h1 class="ml-4 text-xl font-bold text-brand-600 dark:text-brand-500">FinTrack</h1>
+                </div>
+                <div class="hidden md:block">
+                    <!-- Search or breadcrumb can go here -->
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="theme-toggle" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        <i id="theme-toggle-dark-icon" class="hidden fas fa-moon"></i>
+                        <i id="theme-toggle-light-icon" class="hidden fas fa-sun"></i>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <img src="{{ url_for('static', filename='images/' + current_user.profile_picture) }}" alt="Profile" class="w-8 h-8 rounded-full border-2 border-brand-500">
+                        <span class="text-sm font-medium hidden sm:block">{{ current_user.full_name }}</span>
+                    </div>
+                </div>
+            </header>
+            {% endif %}
+
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 relative">
+                <!-- Flash Messages -->
+                <div class="absolute top-4 right-4 z-50">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="mb-4 flex items-center p-4 text-sm rounded-lg shadow-lg {% if category == 'success' %}text-green-800 bg-green-50 dark:bg-gray-800 dark:text-green-400{% elif category == 'danger' %}text-red-800 bg-red-50 dark:bg-gray-800 dark:text-red-400{% else %}text-blue-800 bg-blue-50 dark:bg-gray-800 dark:text-blue-400{% endif %}" role="alert">
+                                    <span class="font-medium mr-2">{{ category|capitalize }}!</span> {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+                
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

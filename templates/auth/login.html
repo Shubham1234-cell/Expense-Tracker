@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Login - FinTrack{% endblock %}
+{% block content %}
+<div class="flex items-center justify-center min-h-full">
+    <div class="w-full max-w-md p-8 space-y-6 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
+        <div class="text-center">
+            <h1 class="text-3xl font-extrabold text-brand-600 dark:text-brand-500 mb-2">FinTrack</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Welcome back</p>
+        </div>
+        <form class="space-y-4" method="POST" action="">
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email address</label>
+                <input id="email" name="email" type="email" required class="mt-1 block w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition duration-150">
+            </div>
+            <div>
+                <div class="flex items-center justify-between">
+                    <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                    <a href="#" class="text-sm font-medium text-brand-600 hover:text-brand-500">Forgot password?</a>
+                </div>
+                <input id="password" name="password" type="password" required class="mt-1 block w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition duration-150">
+            </div>
+            <div class="flex items-center">
+                <input id="remember" name="remember" type="checkbox" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded">
+                <label for="remember" class="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                    Remember me
+                </label>
+            </div>
+            <div>
+                <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transform transition hover:-translate-y-0.5">
+                    Log in
+                </button>
+            </div>
+        </form>
+        <p class="text-sm text-center text-gray-600 dark:text-gray-400">
+            Don't have an account? <a href="{{ url_for('auth.register') }}" class="font-medium text-brand-600 hover:text-brand-500">Sign up</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

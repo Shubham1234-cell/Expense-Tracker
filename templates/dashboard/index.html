@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - FinTrack{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Dashboard Overview</h2>
+        <a href="{{ url_for('dashboard.transactions') }}" class="px-4 py-2 bg-brand-600 text-white rounded-lg shadow hover:bg-brand-700 transition">
+            <i class="fas fa-plus mr-2"></i> Add Transaction
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between transform transition hover:-translate-y-1 hover:shadow-md">
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Balance</p>
+                <h3 class="text-3xl font-bold {% if total_balance >= 0 %}text-gray-800 dark:text-white{% else %}text-red-500{% endif %}">
+                    ${{ "%.2f"|format(total_balance) }}
+                </h3>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-brand-600 dark:text-brand-400">
+                <i class="fas fa-wallet text-xl"></i>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between transform transition hover:-translate-y-1 hover:shadow-md">
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Income</p>
+                <h3 class="text-3xl font-bold text-green-500">
+                    +${{ "%.2f"|format(total_income) }}
+                </h3>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                <i class="fas fa-arrow-down text-xl"></i>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between transform transition hover:-translate-y-1 hover:shadow-md">
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Expenses</p>
+                <h3 class="text-3xl font-bold text-red-500">
+                    -${{ "%.2f"|format(total_expense) }}
+                </h3>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
+                <i class="fas fa-arrow-up text-xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Budget Progress -->
+    {% if overall_budget %}
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white">Monthly Budget Progress</h3>
+            <a href="{{ url_for('dashboard.budgets') }}" class="text-sm text-brand-600 hover:text-brand-700">Manage</a>
+        </div>
+        {% set pct = (overall_budget.spent_amount / overall_budget.monthly_limit * 100) if overall_budget.monthly_limit > 0 else 0 %}
+        <div class="flex justify-between text-sm mb-1">
+            <span class="text-gray-500 dark:text-gray-400">Spent: ${{ "%.2f"|format(overall_budget.spent_amount) }}</span>
+            <span class="font-medium {% if pct >= 100 %}text-red-500{% elif pct >= 80 %}text-yellow-500{% else %}text-gray-800 dark:text-white{% endif %}">
+                {% if pct >= 100 %}Limit Exceeded!{% else %}Remaining: ${{ "%.2f"|format(overall_budget.remaining_amount) }}{% endif %}
+            </span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-3 dark:bg-gray-700">
+            <div class="h-3 rounded-full transition-all duration-500 {% if pct >= 100 %}bg-red-600{% elif pct >= 80 %}bg-yellow-400{% else %}bg-brand-500{% endif %}" style="width: {{ pct if pct <= 100 else 100 }}%"></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Chart -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">Expense Breakdown</h3>
+            <div class="relative h-64 w-full">
+                <canvas id="expenseChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white">Recent Transactions</h3>
+                <a href="{{ url_for('dashboard.transactions') }}" class="text-sm text-brand-600 hover:text-brand-700 font-medium">View All</a>
+            </div>
+            <div class="space-y-4">
+                {% for tx in recent_transactions %}
+                <div class="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center {% if tx.type == 'income' %}bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400{% else %}bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400{% endif %}">
+                            <i class="fas {% if tx.type == 'income' %}fa-arrow-down{% else %}fa-arrow-up{% endif %}"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800 dark:text-white">{{ tx.category.name }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ tx.date.strftime('%b %d, %Y') }}</p>
+                        </div>
+                    </div>
+                    <div class="font-bold {% if tx.type == 'income' %}text-green-500{% else %}text-gray-800 dark:text-white{% endif %}">
+                        {% if tx.type == 'income' %}+{% else %}-{% endif %}${{ "%.2f"|format(tx.amount) }}
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-gray-500 dark:text-gray-400 text-center py-4">No recent transactions.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const chartLabels = {{ chart_labels | tojson }};
+    const chartValues = {{ chart_values | tojson }};
+    
+    if (chartLabels.length > 0) {
+        const ctx = document.getElementById('expenseChart').getContext('2d');
+        
+        // Define an array of colors
+        const bgColors = [
+            'rgba(14, 165, 233, 0.8)', // brand
+            'rgba(244, 63, 94, 0.8)',  // rose
+            'rgba(16, 185, 129, 0.8)', // emerald
+            'rgba(245, 158, 11, 0.8)', // amber
+            'rgba(139, 92, 246, 0.8)', // violet
+            'rgba(59, 130, 246, 0.8)', // blue
+            'rgba(236, 72, 153, 0.8)'  // pink
+        ];
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    data: chartValues,
+                    backgroundColor: bgColors.slice(0, chartLabels.length),
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#374151',
+                            font: {
+                                family: "'Inter', sans-serif"
+                            }
+                        }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+    }
+</script>
+{% endblock %}

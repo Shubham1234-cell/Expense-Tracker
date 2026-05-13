@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Transactions - FinTrack{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Transactions</h2>
+        <button onclick="document.getElementById('add-modal').classList.remove('hidden')" class="px-4 py-2 bg-brand-600 text-white rounded-lg shadow hover:bg-brand-700 transition w-full md:w-auto">
+            <i class="fas fa-plus mr-2"></i> Add New
+        </button>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wider border-b dark:border-gray-700">
+                        <th class="p-4 font-medium">Date</th>
+                        <th class="p-4 font-medium">Category</th>
+                        <th class="p-4 font-medium">Description</th>
+                        <th class="p-4 font-medium text-right">Amount</th>
+                        <th class="p-4 font-medium text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {% for tx in transactions %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
+                        <td class="p-4 text-gray-800 dark:text-gray-300">{{ tx.date.strftime('%b %d, %Y') }}</td>
+                        <td class="p-4">
+                            <span class="px-2 py-1 text-xs rounded-full {% if tx.type == 'income' %}bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300{% else %}bg-brand-100 text-brand-800 dark:bg-brand-900/50 dark:text-brand-300{% endif %}">
+                                {{ tx.category.name }}
+                            </span>
+                        </td>
+                        <td class="p-4 text-gray-600 dark:text-gray-400">{{ tx.description or '-' }}</td>
+                        <td class="p-4 text-right font-medium {% if tx.type == 'income' %}text-green-500{% else %}text-gray-800 dark:text-white{% endif %}">
+                            {% if tx.type == 'income' %}+{% else %}-{% endif %}${{ "%.2f"|format(tx.amount) }}
+                        </td>
+                        <td class="p-4 text-center">
+                            <form action="{{ url_for('dashboard.delete_transaction', transaction_id=tx.id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this transaction?');">
+                                <button type="submit" class="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="p-8 text-center text-gray-500 dark:text-gray-400">
+                            <div class="flex flex-col items-center justify-center">
+                                <i class="fas fa-receipt text-4xl mb-3 text-gray-300 dark:text-gray-600"></i>
+                                <p>No transactions found.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div id="add-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
+        <div class="flex justify-between items-center mb-5">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Add Transaction</h3>
+            <button onclick="document.getElementById('add-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <form action="{{ url_for('dashboard.add_transaction') }}" method="POST" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                    <select name="type" required class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-brand-500 focus:border-brand-500 dark:text-white">
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
+                    <input type="date" name="date" required class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-brand-500 focus:border-brand-500 dark:text-white">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                <select name="category" required class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-brand-500 focus:border-brand-500 dark:text-white">
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }} ({{ cat.type|capitalize }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
+                    </div>
+                    <input type="number" step="0.01" name="amount" required min="0" class="pl-7 w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-brand-500 focus:border-brand-500 dark:text-white" placeholder="0.00">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (Optional)</label>
+                <input type="text" name="description" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-brand-500 focus:border-brand-500 dark:text-white" placeholder="What was this for?">
+            </div>
+            
+            <div class="pt-4 border-t dark:border-gray-700 flex justify-end space-x-3">
+                <button type="button" onclick="document.getElementById('add-modal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition shadow">Save Transaction</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
