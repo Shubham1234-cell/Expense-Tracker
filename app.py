@@ -1,3 +1,4 @@
+```python
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -15,11 +16,11 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     bcrypt.init_app(app)
     mail.init_app(app)
-    
+
     init_scheduler(app)
 
     from models import User, Category, Transaction, Budget, Notification, Setting
-    
+
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
@@ -36,17 +37,36 @@ def create_app(config_class=Config):
 
     return app
 
-    app = create_app()
+
+# Global app object for Vercel/Gunicorn
+app = create_app()
+
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+
         # Create default categories if none exist
         from models.category import Category
+
         if not Category.query.first():
-            default_categories = ['Food', 'Travel', 'Shopping', 'Entertainment', 'Bills', 'Education', 'Health', 'Investment', 'Others']
+            default_categories = [
+                'Food',
+                'Travel',
+                'Shopping',
+                'Entertainment',
+                'Bills',
+                'Education',
+                'Health',
+                'Investment',
+                'Others'
+            ]
+
             for name in default_categories:
                 db.session.add(Category(name=name, type='expense'))
+
             db.session.add(Category(name='Salary', type='income'))
             db.session.commit()
+
     app.run(debug=True)
+```
